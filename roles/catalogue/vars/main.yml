@@ -1,0 +1,5 @@
+---
+schema_files:
+  - schema.sql
+  - app-user.sql
+  - master-data.sql

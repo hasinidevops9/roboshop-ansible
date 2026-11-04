@@ -1,0 +1,24 @@
+---
+- name: Prepare application workspace
+  ansible.builtin.import_tasks: pre-reqs.yml
+
+- name: Install Go and build dependencies
+  ansible.builtin.dnf:
+    name:
+      - golang
+      - git
+      - mysql8.4
+    state: present
+
+- name: Download Go module dependencies
+  ansible.builtin.shell: go mod tidy
+  args:
+    chdir: /app
+
+- name: Build catalogue binary
+  ansible.builtin.shell: CGO_ENABLED=0 go build -o /app/{{ component_name }} .
+  args:
+    chdir: /app
+
+- name: Configure and start systemd service
+  ansible.builtin.import_tasks: systemd.yml

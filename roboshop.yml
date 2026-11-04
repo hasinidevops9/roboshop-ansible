@@ -1,0 +1,6 @@
+---
+- name: Deploy RoboShop component
+  hosts: all
+  become: true
+  roles:
+    - role: "{{ component_name }}"

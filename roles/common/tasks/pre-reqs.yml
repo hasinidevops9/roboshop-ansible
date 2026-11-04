@@ -1,0 +1,33 @@
+---
+- name: Create application user
+  ansible.builtin.user:
+    name: appuser
+    system: true
+    shell: /bin/false
+    home: /app
+    create_home: true
+
+- name: Remove application directory
+  ansible.builtin.file:
+    path: /app
+    state: absent
+
+- name: Create application directory
+  ansible.builtin.file:
+    path: /app
+    state: directory
+    owner: appuser
+    group: appuser
+
+- name: Download application artifact
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/raghudevopsb90/roboshop-microservices/main/artifacts/{{ component_name }}.zip"
+    dest: "/tmp/{{ component_name }}.zip"
+
+- name: Unarchive application into /app
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ component_name }}.zip"
+    dest: /app
+    remote_src: true
+    owner: appuser
+    group: appuser

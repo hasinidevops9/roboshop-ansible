@@ -1,0 +1,80 @@
+---
+- name: Install Nginx
+  ansible.builtin.dnf:
+    name: nginx
+    state: present
+
+- name: Enable and start Nginx
+  ansible.builtin.systemd_service:
+    name: nginx
+    enabled: true
+    state: started
+
+- name: Install Node.js for frontend build
+  ansible.builtin.import_role:
+    name: common
+    tasks_from: nodejs-install
+
+- name: Download frontend artifact
+  ansible.builtin.get_url:
+    url: "https://raw.githubusercontent.com/raghudevopsb90/roboshop-microservices/main/artifacts/{{ component_name }}.zip"
+    dest: "/tmp/{{ component_name }}.zip"
+
+- name: Remove previous frontend build directory
+  ansible.builtin.file:
+    path: /tmp/frontend
+    state: absent
+
+- name: Create frontend build directory
+  ansible.builtin.file:
+    path: /tmp/frontend
+    state: directory
+
+- name: Unarchive frontend source
+  ansible.builtin.unarchive:
+    src: "/tmp/{{ component_name }}.zip"
+    dest: /tmp/frontend
+    remote_src: true
+
+- name: Install frontend npm dependencies
+  ansible.builtin.shell: npm install
+  args:
+    chdir: /tmp/frontend
+
+- name: Build frontend static export
+  ansible.builtin.shell: npm run build
+  args:
+    chdir: /tmp/frontend
+
+- name: Remove web root directory
+  ansible.builtin.file:
+    path: /usr/share/nginx/html
+    state: absent
+
+- name: Recreate web root directory
+  ansible.builtin.file:
+    path: /usr/share/nginx/html
+    state: directory
+    owner: root
+    group: root
+
+- name: Deploy built frontend to web root
+  ansible.builtin.copy:
+    src: /tmp/frontend/out/
+    dest: /usr/share/nginx/html/
+    remote_src: true
+    owner: root
+    group: root
+
+- name: Install Nginx configuration
+  ansible.builtin.template:
+    src: nginx.conf
+    dest: /etc/nginx/nginx.conf
+
+- name: Validate Nginx configuration
+  ansible.builtin.shell: nginx -t
+
+- name: Restart Nginx
+  ansible.builtin.systemd_service:
+    name: nginx
+    state: restarted

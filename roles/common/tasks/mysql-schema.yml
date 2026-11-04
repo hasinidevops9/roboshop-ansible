@@ -1,0 +1,36 @@
+---
+- name: Install MySQL client
+  ansible.builtin.dnf:
+    name: mysql8.4
+    state: present
+
+- name: Detect whether catalogue database already exists
+  block:
+    - name: Probe catalogue database
+      ansible.builtin.shell: mysql -h mysql.hdevops09.online -u root -pRoboShop@1 -e "USE catalogue"
+      changed_when: false
+    - name: Record catalogue database as present
+      ansible.builtin.set_fact:
+        catalogue_db_present: true
+  rescue:
+    - name: Record catalogue database as absent
+      ansible.builtin.set_fact:
+        catalogue_db_present: false
+
+- name: Count catalogue MySQL user accounts
+  ansible.builtin.shell: mysql -h mysql.hdevops09.online -u root -pRoboShop@1 -Nse "SELECT COUNT(*) FROM mysql.user WHERE User='catalogue' AND Host='%'"
+  register: catalogue_user_count
+  changed_when: false
+
+- name: Record catalogue MySQL user presence
+  ansible.builtin.set_fact:
+    catalogue_app_user_present: "{{ catalogue_user_count.stdout | trim != '0' }}"
+
+- name: Load MySQL schema files
+  ansible.builtin.shell: "mysql -h mysql.hdevops09.online -u root -pRoboShop@1 < /app/db/{{ item }}"
+  loop: "{{ schema_files }}"
+  when: >
+    (item == 'schema.sql' and not catalogue_db_present) or
+    (item == 'app-user.sql' and not catalogue_app_user_present) or
+    (item == 'master-data.sql')
+  changed_when: true

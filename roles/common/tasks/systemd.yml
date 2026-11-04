@@ -1,0 +1,27 @@
+---
+- name: Load MySQL schema files
+  ansible.builtin.import_tasks: mysql-schema.yml
+  when: schema_files is defined
+
+- name: Set ownership on application directory
+  ansible.builtin.file:
+    path: /app
+    owner: appuser
+    group: appuser
+    recurse: true
+    mode: o-rwx
+
+- name: Install systemd unit file
+  ansible.builtin.template:
+    src: "{{ playbook_dir }}/roles/{{ component_name }}/templates/{{ component_name }}.service"
+    dest: "/etc/systemd/system/{{ component_name }}.service"
+
+- name: Reload systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Enable and restart application service
+  ansible.builtin.systemd_service:
+    name: "{{ component_name }}"
+    enabled: true
+    state: restarted
