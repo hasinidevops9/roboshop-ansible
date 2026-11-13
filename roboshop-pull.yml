@@ -1,0 +1,11 @@
+---
+- name: Deploy RoboShop components
+  hosts: localhost
+  connection: local
+  become: yes
+  gather_facts: no
+
+  tasks:
+    - name: Import role based on component
+      ansible.builtin.import_role:
+        name: "{{ component_name }}"
