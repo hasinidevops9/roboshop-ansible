@@ -68,7 +68,7 @@
 
 - name: Install Nginx configuration
   ansible.builtin.template:
-    src: nginx.conf
+    src: nginx-practice.conf
     dest: /etc/nginx/nginx.conf
 
 - name: Validate Nginx configuration
